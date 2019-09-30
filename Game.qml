@@ -3,13 +3,21 @@ import QtQuick.Layouts 1.3
 
 Rectangle {
     id: game
-    signal gameExit()
+    signal gameExit(int score)
+
+    property int score: 0
 
     anchors.fill: parent
     color: "darkgreen"
 
-    property bool wide_aspect: (width > height)
-    // Need at least 24 tiles, so 12 icons
+    property var tiles: [
+        "qrc:/resources/red_tile.png",
+        "qrc:/resources/green_tile.png",
+        "qrc:/resources/blue_tile.png",
+        "qrc:/resources/white_tile.png",
+    ]
+
+    // Need at least 24 tiles, so 12 matching icons
     property var icons: [
         "qrc:/resources/blue_monster.png",
         "qrc:/resources/brown_monster.png",
@@ -25,13 +33,6 @@ Rectangle {
         "qrc:/resources/yellow_monster.png",
     ]
 
-    property var tiles: [
-        "qrc:/resources/red_tile.png",
-        "qrc:/resources/green_tile.png",
-        "qrc:/resources/blue_tile.png",
-        "qrc:/resources/white_tile.png",
-    ]
-
 
     GridLayout {
         id: grid
@@ -43,9 +44,9 @@ Rectangle {
         columns: 4
         columnSpacing: 0
         rowSpacing: 0
-        property var previousItem: ({})
+        property var previousItem: null
         property int iconsDone: 0
-        property int tilesize: height / grid.rows //(wide_aspect) ? (width / grid.columns) : (height / grid.rows)
+        property int tilesize: height / grid.rows // for now, always assume portrait mode
 
         Repeater {
             id: repeater
@@ -72,10 +73,10 @@ Rectangle {
                     interval: (1 * 1000); running: false; repeat: false
                     onTriggered: {
                         flipable.flipped = false;
-                        if (grid.previousItem !== undefined) {
+                        if (grid.previousItem !== null) {
                             grid.previousItem.flipped = false;
                         }
-                        grid.previousItem = undefined
+                        grid.previousItem = null;
                     }
                 }
 
@@ -83,9 +84,11 @@ Rectangle {
                     id: resetTimer
                     interval: (5 * 1000); running: false; repeat: false
                     onTriggered: {
-                        grid.previousItem = undefined
-                        game.shuffleDeck()
-                        grid.iconsDone = 0
+                        //grid.previousItem = null;
+                        //game.shuffleDeck()
+                        //grid.iconsDone = 0
+
+                        game.gameExit(97);
                     }
                 }
 
@@ -111,12 +114,12 @@ Rectangle {
                         if (!unflipTimer.running && !flipable.done && !flipable.flipped) {
                             flipable.flipped = true;
 
-                            if (grid.previousItem !== undefined) {
-                                if (icon == grid.previousItem.source) {
-                                    // Matched
+                            if (grid.previousItem !== null) {
+                                if (icon === grid.previousItem.source) {
+                                    // Matched previously flipped tile
                                     flipable.done = true
-                                    grid.previousItem.done = true
-                                    grid.previousItem = undefined
+                                    grid.previousItem.done = true;
+                                    grid.previousItem = null;
                                     grid.iconsDone += 2
                                     if (grid.iconsDone == icons.length) {
                                         resetTimer.start()
@@ -132,6 +135,10 @@ Rectangle {
                 }
             }
         }
+    }
+
+    function removeTile() {
+
     }
 
     function shuffleDeck() {
