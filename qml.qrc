@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>Game.qml</file>
+        <file>CaveView.qml</file>
         <file>resources/</file>
     </qresource>
 </RCC>

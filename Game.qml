@@ -6,6 +6,16 @@ Rectangle {
     signal gameExit(int score)
 
     property int score: 0
+    property int level: score / 10 + 1
+    property bool gameOver: false
+    onGameOverChanged: {
+        if (gameOver) gameOverTimer.restart();
+    }
+    Timer {
+        id: gameOverTimer
+        interval: (5000); running: false; repeat: false
+        onTriggered: gameExit(score)
+    }
 
     anchors.fill: parent
     color: "darkslategray"
@@ -35,6 +45,25 @@ Rectangle {
         //"qrc:/resources/magenta_monster.png",
     ]
 
+    CaveView {
+        id: caveView
+        width: parent.width
+        height: parent.height * 0.15
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+    }
+
+    Text {
+        anchors.top: caveView.bottom
+        anchors.topMargin: parent.height * 0.01
+        anchors.horizontalCenter: parent.horizontalCenter
+        font.pixelSize: parent.width / 20
+        font.bold: true
+        font.underline: true
+        lineHeight: 1.5
+        text: "Score: %1".arg(score) + '\n' + "Level: %1".arg(level)
+    }
+
     // Clipping rect to hide top row of tiles, allows for drop animation from above
     Item {
         clip: true
@@ -56,7 +85,7 @@ Rectangle {
 
             Timer {
                 id: match3Timer
-                interval: (1 * 1000); running: false; repeat: false
+                interval: (1500); running: false; repeat: false
                 onRunningChanged: { grid.enabled = !running; }
                 onTriggered: match3()
             }
@@ -236,6 +265,7 @@ Rectangle {
                 }
                 if (count >= 3) {
                     removeColorByRow(r, c);
+                    score++;
                 }
             }
         }
@@ -250,6 +280,7 @@ Rectangle {
                 }
                 if (count >= 3) {
                     removeColorByCol(col, c);
+                    score++;
                 }
             }
         }
