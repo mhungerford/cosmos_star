@@ -8,8 +8,8 @@ ApplicationWindow {
     objectName: "window"
     visible: true
     visibility: (Qt.platform.os == "android") ? Window.FullScreen : Window.Windowed
-    // Lets keep the game portrait-mode, even on desktops
-    width: (visibility == Window.FullScreen) ? Screen.width : 768
+    // Lets keep the game portrait-mode, even on desktops (and mimic 16:9 to stay similar)
+    width: (visibility == Window.FullScreen) ? Screen.width : 576
     height: (visibility == Window.FullScreen) ? Screen.height : 1024
 
     Item {
@@ -59,6 +59,13 @@ ApplicationWindow {
             visible: false
             color: "darkgray"
 
+            Image {
+                anchors.top: parent.top
+                width: parent.width
+                fillMode: Image.PreserveAspectFit
+                source: "qrc:/resources/title_top.png"
+            }
+
             Text {
                 anchors.centerIn: parent
                 anchors.verticalCenterOffset: -60
@@ -74,6 +81,13 @@ ApplicationWindow {
                     anchors.fill: parent
                     onClicked: app.state = "Game"
                 }
+            }
+
+            Image {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                fillMode: Image.PreserveAspectFit
+                source: "qrc:/resources/title_bottom.png"
             }
         }
 

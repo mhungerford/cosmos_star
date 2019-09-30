@@ -22,6 +22,10 @@ Mobile Game GUI Buttons by SetyByrd
 License: CC0
 https://opengameart.org/content/mobile-game-gui-buttons
 
+Title Banner by pencilparker
+License: Pixabay License
+https://pixabay.com/illustrations/toys-astronaut-rocket-planet-3644073/
+
 ## Building
 This game is written in Qt/QML and compiles in Qt 5.6+
 It can be built either by the Qt that ships with Ubuntu 16.04 or greater 
