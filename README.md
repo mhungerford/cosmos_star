@@ -26,6 +26,10 @@ Title Banner by pencilparker
 License: Pixabay License
 https://pixabay.com/illustrations/toys-astronaut-rocket-planet-3644073/
 
+Icon Base by pencilparker
+License: Pixabay License
+https://pixabay.com/illustrations/sketch-cartoon-space-set-3045125/
+
 ## Building
 This game is written in Qt/QML and compiles in Qt 5.6+
 It can be built either by the Qt that ships with Ubuntu 16.04 or greater 

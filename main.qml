@@ -91,7 +91,7 @@ ApplicationWindow {
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    font.pixelSize: width / 4
+                    font.pixelSize: parent.width / 20
                     font.bold: true
                     font.underline: true
                     text: "High Score: %1".arg(app.highScore)

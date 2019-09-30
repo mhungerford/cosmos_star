@@ -28,7 +28,7 @@ Rectangle {
         "qrc:/resources/red_monster.png",
         "qrc:/resources/yellow_monster.png",
 
-        // Game was too difficult, so allow more duplicates
+        // Game was too difficult, so removed these to create more duplicates
         //"qrc:/resources/darkblue_monster.png",
         //"qrc:/resources/darkgreen_monster.png",
         //"qrc:/resources/lavender_monster.png",
