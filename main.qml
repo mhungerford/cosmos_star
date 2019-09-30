@@ -66,22 +66,38 @@ ApplicationWindow {
                 source: "qrc:/resources/title_top.png"
             }
 
-            Text {
+            Column {
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: -60
-                text: "High Score: %1".arg(app.highScore)
-            }
+                width: parent.width
+                spacing: titleTextImage.sourceSize.height
 
-            Image {
-                anchors.centerIn: parent
-                width: parent.width / 4
-                fillMode: Image.PreserveAspectFit
-                source: "qrc:/resources/play_button.png"
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: app.state = "Game"
+                Image {
+                    id: titleTextImage
+                    width: parent.width
+                    fillMode: Image.PreserveAspectFit
+                    source: "qrc:/resources/title_center.png"
+                }
+
+                Image {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: parent.width / 2
+                    fillMode: Image.PreserveAspectFit
+                    source: "qrc:/resources/play_button.png"
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: app.state = "Game"
+                    }
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    font.pixelSize: width / 4
+                    font.bold: true
+                    font.underline: true
+                    text: "High Score: %1".arg(app.highScore)
                 }
             }
+
 
             Image {
                 anchors.bottom: parent.bottom

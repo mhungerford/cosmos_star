@@ -8,7 +8,7 @@ Rectangle {
     property int score: 0
 
     anchors.fill: parent
-    color: "darkgreen"
+    color: "darkslategray"
 
     property var tiles: [
         "qrc:/resources/red_tile.png",
