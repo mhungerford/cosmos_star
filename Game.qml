@@ -43,43 +43,52 @@ Rectangle {
         anchors.bottom: game.bottom
         anchors.horizontalCenter: game.horizontalCenter
 
-        GridLayout {
+        Item {
             id: grid
             width: parent.width
             height: tilesize * grid.rows
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
-            rows: 6
-            columns: 4
-            columnSpacing: 0
-            rowSpacing: 0
+            property int rows: 6
+            property int columns: 4
             property real tilesize: width / grid.columns // for now, always assume portrait mode
             property var previousItem: null
-            property int iconsDone: 0
+
+            Timer {
+                id: match3Timer
+                interval: (1 * 1000); running: false; repeat: false
+                onRunningChanged: { grid.enabled = !running; }
+                onTriggered: match3()
+            }
 
             Repeater {
                 id: repeater
                 model: 0
                 delegate: Flipable {
                     id: flipable
+                    x: col * parent.tilesize
+                    y: row * parent.tilesize
+                    width: parent.tilesize
+                    height: parent.tilesize
                     property string icon: ""
-                    property string tile: ""
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    property int tileidx: -1
+                    property int row: -1
+                    property int col: -1
 
                     property bool flipped: false
                     property real angle: flipped ? 180 : 0
-                    property bool done: false
                     property string source: icon
-                    property int flipDuration: (done) ? 0 : 1000
+                    property int flipDuration: 1000
+                    property bool active: true;
 
                     transform: Rotation {id : rotationTile; angle : flipable.angle; axis {x : 0; y: 1; z : 0} origin.x : width * 0.5; origin.y : height * 0.5}
-                    Behavior on angle { NumberAnimation { duration: flipDuration } }
-                    Behavior on y { NumberAnimation { duration: 1000; } }
+                    Behavior on angle { enabled: flipable.active; NumberAnimation { duration: flipDuration } }
+                    Behavior on y { enabled: flipable.active; NumberAnimation { duration: 600; } }
 
                     Timer {
                         id: unflipTimer
                         interval: (1 * 1000); running: false; repeat: false
+                        onRunningChanged: { grid.enabled = !running; }
                         onTriggered: {
                             flipable.flipped = false;
                             if (grid.previousItem !== null) {
@@ -89,6 +98,18 @@ Rectangle {
                         }
                     }
 
+                    function startPairTimer() {
+                        pairTimer.restart();
+                    }
+
+                    Timer {
+                        id: pairTimer
+                        interval: (1500); running: false; repeat: false
+                        onRunningChanged: { grid.enabled = !running; }
+                        onTriggered: removeTileByIndex(index)
+                    }
+
+
                     Timer {
                         id: resetTimer
                         interval: (5 * 1000); running: false; repeat: false
@@ -96,7 +117,7 @@ Rectangle {
                     }
 
                     front: Image {
-                        source: flipable.tile
+                        source: (tileidx >= 0) ? tiles[tileidx] : ""
                         fillMode: Image.PreserveAspectFit
                         anchors.centerIn: parent
                         width: parent.width
@@ -114,21 +135,17 @@ Rectangle {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            if (!unflipTimer.running && !flipable.done && !flipable.flipped) {
+                            if (!unflipTimer.running && !flipable.flipped) {
                                 flipable.flipped = true;
 
                                 if (grid.previousItem !== null) {
                                     if (icon === grid.previousItem.source) {
                                         // Matched previously flipped tile
-                                        flipable.done = true
-                                        grid.previousItem.done = true;
+                                        startPairTimer();
+                                        grid.previousItem.startPairTimer();
                                         grid.previousItem = null;
-                                        grid.iconsDone += 2
-                                        if (grid.iconsDone == icons.length) {
-                                            resetTimer.start()
-                                        }
                                     } else {
-                                        unflipTimer.start()
+                                        unflipTimer.restart()
                                     }
                                 } else {
                                     grid.previousItem = flipable
@@ -141,8 +158,101 @@ Rectangle {
         }
     }
 
-    function removeTile() {
+    function addRandomTile(col) {
+        for (var i = 0; i < repeater.count; i++) {
+            var itile = repeater.itemAt(i);
+            if (itile.row == -1 && itile.col == -1) {
+                itile.active = true;
+                itile.row = 0;
+                itile.col = col;
+                itile.tileidx = Math.floor(Math.random() * tiles.length)
+                break;
+            }
+        }
+    }
 
+    function removeTileByIndex(index) {
+        var itile = repeater.itemAt(index);
+        var col = itile.col
+        for (var i = 0; i < repeater.count; i++) {
+            if (repeater.itemAt(i).col === itile.col) {
+                if (repeater.itemAt(i).row < itile.row) {
+                    repeater.itemAt(i).row++;
+                }
+            }
+        }
+        itile.active = false;
+        itile.row = -1;
+        itile.col = -1;
+        itile.flipped = false;
+        addRandomTile(col)
+        match3Timer.restart();
+    }
+
+    function removeColorByRow(row, color) {
+        for (var i = 0; i < repeater.count; i++) {
+            var itile = repeater.itemAt(i);
+            if (itile.row === row && itile.tileidx === color) {
+                removeTileByIndex(i);
+            }
+        }
+    }
+
+    function removeColorByCol(col, color) {
+        for (var i = 0; i < repeater.count; i++) {
+            var itile = repeater.itemAt(i);
+            if (itile.col === col && itile.tileidx === color) {
+                removeTileByIndex(i);
+            }
+        }
+    }
+
+    function match3() {
+        var rowColors = new Array(grid.rows);
+        for (var i = 0; i < grid.rows; i++) {
+            rowColors[i] = new Array(tiles.length);
+        }
+
+        var colColors = new Array(grid.columns);
+        for (var i = 0; i < grid.columns; i++) {
+            colColors[i] = new Array(tiles.length);
+        }
+
+        for (var i = 0; i < repeater.count; i++) {
+            var itile = repeater.itemAt(i);
+            if (itile.row >= 1 && itile.col !== -1) {
+                rowColors[itile.row][itile.tileidx] = rowColors[itile.row][itile.tileidx] | (0x1 << itile.col);
+                colColors[itile.col][itile.tileidx] = colColors[itile.col][itile.tileidx] | (0x1 << itile.row);
+            }
+        }
+
+        for (var r = 0; r < grid.rows; r++) {
+            for (var c = 0; c < tiles.length; c++) {
+                var count = 0;
+                var temp = rowColors[r][c];
+                while (temp > 0) {
+                    temp &= (temp << 1);
+                    count += 1;
+                }
+                if (count >= 3) {
+                    removeColorByRow(r, c);
+                }
+            }
+        }
+
+        for (var col = 0; col < grid.columns; col++) {
+            for (var c = 0; c < tiles.length; c++) {
+                var count = 0;
+                var temp = colColors[col][c];
+                while (temp > 0) {
+                    temp &= (temp << 1);
+                    count += 1;
+                }
+                if (count >= 3) {
+                    removeColorByCol(col, c);
+                }
+            }
+        }
     }
 
     function shuffleDeck() {
@@ -166,10 +276,11 @@ Rectangle {
         repeater.model = deck.length
 
         for (var i=0; i < deck.length; i++) {
-            repeater.itemAt(i).tile = tiles[Math.floor(Math.random() * tiles.length)]
+            repeater.itemAt(i).tileidx = Math.floor(Math.random() * tiles.length)
             repeater.itemAt(i).icon = icons[deck[i]];
             repeater.itemAt(i).flipped = false
-            repeater.itemAt(i).done = false
+            repeater.itemAt(i).col = i % 4
+            repeater.itemAt(i).row = Math.floor(i / 4)
         }
 
     }
