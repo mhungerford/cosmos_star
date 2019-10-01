@@ -106,7 +106,7 @@ ApplicationWindow {
             function saveHighScore(score) { if (localStorageAvailable) localStorageObject.saveHighScore(score); }
             // Odd workaround, returning is always undefined, but storing property and reading it works
             property var localStorageObject: !localStorageAvailable ? {} : Qt.createQmlObject(
-                'import QtQuick 2.6;' +
+                'import QtQuick 2.5;' +
                 'import QtQuick.LocalStorage 2.0;' +
                 'Item {' +
                     'property int score: 0;' +
@@ -119,7 +119,7 @@ ApplicationWindow {
                                 'score = rs.rows.item(i).score;' +
                             '}' +
                         '});' +
-                    '}\n' +
+                    '}' +
                     'function saveHighScore(score) {' +
                         'var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo\'s Star High Score", 100);' +
                         'db.transaction(function(tx) {' +
