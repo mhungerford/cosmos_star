@@ -1,7 +1,6 @@
 import QtQuick 2.6
 import QtQuick.Controls 1.2
 import QtQuick.Window 2.2
-import QtQuick.LocalStorage 2.0
 
 ApplicationWindow {
     id: window
@@ -29,29 +28,6 @@ ApplicationWindow {
         ]
 
         property int highScore: 0
-
-        function loadHighScore() {
-            console.log("loadHighScore");
-            var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo's Star High Score", 100);
-            db.transaction(function(tx) {
-                tx.executeSql('CREATE TABLE IF NOT EXISTS HighScore(score NUMBER)');
-                var rs = tx.executeSql('SELECT * FROM HighScore')
-                // Load the highScore, should only be 1 entry
-                for (var i = 0; i < rs.rows.length; i++) {
-                    highScore = rs.rows.item(i).score;
-                    console.log("Loaded HighScore: " + highScore);
-                }
-            });
-        }
-
-        function saveHighScore() {
-            console.log("saveHighScore");
-            var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo's Star High Score", 100);
-            db.transaction(function(tx) {
-                tx.executeSql('DELETE FROM HighScore'); // Clear the previous highScore
-                tx.executeSql('INSERT INTO HighScore VALUES(?)', [highScore]); // Save the new highScore
-            });
-        }
 
         Rectangle {
             id: title
@@ -118,18 +94,54 @@ ApplicationWindow {
             }
         }
 
+        Item {
+            // Wrap LocalStorage to avoid it on WebAssembly builds
+            // Load/Save the highScore, should only be 1 entry
+            id: localStorageWrapper
+            property bool localStorageAvailable: (Qt.platform.os !== "unix")
+            function loadHighScore() {
+                if (localStorageAvailable) localStorageObject.loadHighScore();
+                return (localStorageAvailable) ? localStorageObject.score : 0;
+            }
+            function saveHighScore(score) { if (localStorageAvailable) localStorageObject.saveHighScore(score); }
+            // Odd workaround, returning is always undefined, but storing property and reading it works
+            property var localStorageObject: !localStorageAvailable ? {} : Qt.createQmlObject(
+                'import QtQuick 2.6;' +
+                'import QtQuick.LocalStorage 2.0;' +
+                'Item {' +
+                    'property int score: 0;' +
+                    'function loadHighScore() {' +
+                        'var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo\'s Star High Score", 100);' +
+                        'db.transaction(function(tx) {' +
+                            'tx.executeSql(\'CREATE TABLE IF NOT EXISTS HighScore(score NUMBER)\');' +
+                            'var rs = tx.executeSql(\'SELECT * FROM HighScore\');' +
+                            'for (var i = 0; i < rs.rows.length; i++) {' +
+                                'score = rs.rows.item(i).score;' +
+                            '}' +
+                        '});' +
+                    '}\n' +
+                    'function saveHighScore(score) {' +
+                        'var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo\'s Star High Score", 100);' +
+                        'db.transaction(function(tx) {' +
+                            'tx.executeSql(\'DELETE FROM HighScore\');' +
+                            'tx.executeSql(\'INSERT INTO HighScore VALUES(?)\', [score]);' +
+                        '});' +
+                    '}' +
+                '}', parent)
+        }
+
         // Support gameExit(score) signal from Game to go back to title page
         Connections {
             target: game.item
             onGameExit: {
                 if (score > app.highScore) {
                     app.highScore = score;
-                    app.saveHighScore();
+                    localStorageWrapper.saveHighScore(app.highScore);
                 }
                 app.state = "Title"
             }
         }
 
-        Component.onCompleted: loadHighScore()
+        Component.onCompleted: { app.highScore = localStorageWrapper.loadHighScore(); }
     }
 }
