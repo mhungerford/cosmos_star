@@ -279,6 +279,7 @@ Rectangle {
                     count += 1;
                 }
                 if (count >= 3) {
+                    // Bug, removes even non-consecutive of the same color
                     removeColorByCol(col, c);
                     score++;
                 }

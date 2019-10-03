@@ -1,11 +1,21 @@
-QT += quick
-CONFIG += c++11
+QT = core gui quick
+CONFIG += c++17
+CONFIG += release
 
 SOURCES += main.cpp
 
 RESOURCES += qml.qrc
 
 DEFINES += QT_DEPRECATED_WARNINGS
+#DEFINES -= QT_NETWORK_LIB QT_CORE_LIB
+
+wasm:QMAKE_LFLAGS += -s ALLOW_MEMORY_GROWTH=0 -s TOTAL_MEMORY=128Mb -s DISABLE_EXCEPTION_CATCHING=1
+
+#try to make binary smaller
+CONFIG += ltcg
+CONFIG += optimize_full
+CONFIG += release
+QT_PLUGINS -= qgif qwebp qtiff qico qsvg qtga qicns qjpeg qwbmp
 
 #if platform is android, add extra dependencies
 android: QT += androidextras

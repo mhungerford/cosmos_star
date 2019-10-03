@@ -1,15 +1,20 @@
 import QtQuick 2.6
-import QtQuick.Controls 1.2
 import QtQuick.Window 2.2
 
-ApplicationWindow {
+Window {
     id: window
     objectName: "window"
     visible: true
-    visibility: (Qt.platform.os == "android") ? Window.FullScreen : Window.Windowed
+    visibility: (Qt.platform.os == "android" || Qt.platform.os == "unix") ? Window.FullScreen : Window.Windowed
     // Lets keep the game portrait-mode, even on desktops (and mimic 16:9 to stay similar)
-    width: (visibility == Window.FullScreen) ? Screen.width : 576
-    height: (visibility == Window.FullScreen) ? Screen.height : 1024
+    width: (visibility == Window.FullScreen) ? Screen.width : 450
+    height: (visibility == Window.FullScreen) ? Screen.height : 800
+
+    // Fixed size
+    maximumHeight: height
+    minimumHeight: height
+    maximumWidth: width
+    minimumWidth: width
 
     Item {
         id: app
@@ -105,29 +110,30 @@ ApplicationWindow {
             }
             function saveHighScore(score) { if (localStorageAvailable) localStorageObject.saveHighScore(score); }
             // Odd workaround, returning is always undefined, but storing property and reading it works
-            property var localStorageObject: !localStorageAvailable ? {} : Qt.createQmlObject(
-                'import QtQuick 2.5;' +
-                'import QtQuick.LocalStorage 2.0;' +
-                'Item {' +
-                    'property int score: 0;' +
-                    'function loadHighScore() {' +
-                        'var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo\'s Star High Score", 100);' +
-                        'db.transaction(function(tx) {' +
-                            'tx.executeSql(\'CREATE TABLE IF NOT EXISTS HighScore(score NUMBER)\');' +
-                            'var rs = tx.executeSql(\'SELECT * FROM HighScore\');' +
-                            'for (var i = 0; i < rs.rows.length; i++) {' +
-                                'score = rs.rows.item(i).score;' +
-                            '}' +
-                        '});' +
-                    '}' +
-                    'function saveHighScore(score) {' +
-                        'var db = LocalStorage.openDatabaseSync("HighScore", "1.0", "Cosmo\'s Star High Score", 100);' +
-                        'db.transaction(function(tx) {' +
-                            'tx.executeSql(\'DELETE FROM HighScore\');' +
-                            'tx.executeSql(\'INSERT INTO HighScore VALUES(?)\', [score]);' +
-                        '});' +
-                    '}' +
-                '}', parent)
+            property var localStorageObject: !localStorageAvailable ? {} : Qt.createQmlObject("
+                import QtQuick 2.5;
+                import QtQuick.LocalStorage 2.0;
+                Item {
+                    property int score: 0;
+                    function loadHighScore() {
+                        var db = LocalStorage.openDatabaseSync(\"HighScore\", \"1.0\", \"Cosmo's Star High Score\", 100);
+                        db.transaction(function(tx) {
+                            tx.executeSql('CREATE TABLE IF NOT EXISTS HighScore(score NUMBER)');
+                            var rs = tx.executeSql('SELECT * FROM HighScore');
+                            for (var i = 0; i < rs.rows.length; i++) {
+                                score = rs.rows.item(i).score;
+                            }
+                        });
+                    }
+                    function saveHighScore(score) {
+                        var db = LocalStorage.openDatabaseSync(\"HighScore\", \"1.0\", \"Cosmo's Star High Score\", 100);
+                        db.transaction(function(tx) {
+                            tx.executeSql('DELETE FROM HighScore');
+                            tx.executeSql('INSERT INTO HighScore VALUES(?)', [score]);
+                        });
+                    }
+                }
+                ", parent)
         }
 
         // Support gameExit(score) signal from Game to go back to title page
@@ -142,6 +148,9 @@ ApplicationWindow {
             }
         }
 
-        Component.onCompleted: { app.highScore = localStorageWrapper.loadHighScore(); }
+        Component.onCompleted: { 
+            console.log("OS: " + Qt.platform.os);
+            app.highScore = localStorageWrapper.loadHighScore();
+        }
     }
 }
