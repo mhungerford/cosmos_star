@@ -165,5 +165,11 @@ Item {
     }
 
 
-    Component.onCompleted: { }
+    Component.onCompleted: {
+        // On load, make 1 monster visible
+        repeater.itemAt(0).visible = true;
+        repeater.itemAt(0).enemyidx = Math.floor(Math.random() * enemyList.length)
+        repeater.itemAt(0).percent = 0;
+
+    }
 }

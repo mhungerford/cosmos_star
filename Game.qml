@@ -78,6 +78,7 @@ Rectangle {
             height: tilesize * grid.rows
             anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
+            property int count: rows * columns
             property int rows: 6
             property int columns: 4
             property real tilesize: width / grid.columns // for now, always assume portrait mode
@@ -85,29 +86,29 @@ Rectangle {
 
             Timer {
                 id: match3Timer
-                interval: (1500); running: false; repeat: false
+                interval: (1200); running: false; repeat: false
                 onRunningChanged: { grid.enabled = !running; }
                 onTriggered: match3()
             }
 
             Repeater {
                 id: repeater
-                model: 0
+                model: grid.columns * grid.rows  // card count (includes 1 hidden row)
                 delegate: Flipable {
                     id: flipable
                     x: col * parent.tilesize
                     y: row * parent.tilesize
                     width: parent.tilesize
                     height: parent.tilesize
-                    property string icon: ""
-                    property int tileidx: -1
+                    property string icon: icons[Math.floor(Math.random() * icons.length)]
+                    property int tileidx: Math.floor(Math.random() * tiles.length)
                     property int row: -1
                     property int col: -1
 
                     property bool flipped: false
                     property real angle: flipped ? 180 : 0
                     property string source: icon
-                    property int flipDuration: 1000
+                    property int flipDuration: 700
                     property bool active: true;
 
                     transform: Rotation {id : rotationTile; angle : flipable.angle; axis {x : 0; y: 1; z : 0} origin.x : width * 0.5; origin.y : height * 0.5}
@@ -116,7 +117,7 @@ Rectangle {
 
                     Timer {
                         id: unflipTimer
-                        interval: (1 * 1000); running: false; repeat: false
+                        interval: (1000); running: false; repeat: false
                         onRunningChanged: { grid.enabled = !running; }
                         onTriggered: {
                             flipable.flipped = false;
@@ -183,6 +184,13 @@ Rectangle {
                         }
                     }
                 }
+            }
+            Component.onCompleted: {
+                for (var i = 0; i < grid.count; i++) {
+                    repeater.itemAt(i).col = i % 4
+                    repeater.itemAt(i).row = Math.floor(i / 4)
+                }
+                match3(); // remove all match3 at start
             }
         }
     }
@@ -287,37 +295,6 @@ Rectangle {
         }
     }
 
-    function shuffleDeck() {
-        function shuffleArray(array) {
-            for (var i = array.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var temp = array[i];
-                array[i] = array[j];
-                array[j] = temp;
-            }
-        }
-
-        var deck = []
-        for (var i = 0; i < icons.length; i++) {
-            deck.push(i);
-            deck.push(i);
-            deck.push(i);
-        }
-        shuffleArray(deck)
-
-        repeater.model = deck.length
-
-        for (var i=0; i < deck.length; i++) {
-            repeater.itemAt(i).tileidx = Math.floor(Math.random() * tiles.length)
-            repeater.itemAt(i).icon = icons[deck[i]];
-            repeater.itemAt(i).flipped = false
-            repeater.itemAt(i).col = i % 4
-            repeater.itemAt(i).row = Math.floor(i / 4)
-        }
-
-    }
-
     Component.onCompleted: {
-        shuffleDeck()
     }
 }
