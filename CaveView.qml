@@ -62,6 +62,84 @@ Item {
         }
     }
 
+    Item {
+        id: blastItem
+        width: parent.width
+        height: parent.height
+        visible: true
+        property int blastCount: 0
+
+        function addBlast() {
+            for (var i = 0; i < blastRepeater.count; i++) {
+                if (!blastRepeater.itemAt(i).visible) {
+                    blastRepeater.itemAt(i).visible = true
+                    break;
+                }
+            }
+        }
+
+        Repeater {
+            id: blastRepeater
+            model: 10 // max 10 blast pool
+            delegate: Item {
+                id: blast
+                height: parent.height * 0.28
+                width: height
+                x: (cosmo.x * percent)
+                y: caveView.height * 0.34
+                property real percent: 0.9
+                visible: false // disable at creation
+                onVisibleChanged: {
+                    if (visible) percent = 0.9;
+                    if (visible) { blastItem.blastCount++; } else { blastItem.blastCount--; }
+                }
+
+                Timer {
+                    interval: 500; running: visible; repeat: true
+                    onTriggered: {
+                        blast.percent = Math.max(blast.percent - 0.05, 0.0)
+
+                        var percent = -1;
+                        var index = -1
+                        for (var i = 0; i < repeater.count; i++) {
+                            if (repeater.itemAt(i).visible && repeater.itemAt(i).percent > percent) {
+                                percent = repeater.itemAt(i).percent
+                                index = i;
+                            }
+                        }
+                        if (index >= 0 && repeater.itemAt(index).percent >= blast.percent) {
+                            repeater.itemAt(index).visible = false
+                            blast.visible = false
+                        }
+                    }
+                }
+
+                SpriteSequence {
+                    id: blastSeq
+                    width: parent.width
+                    height: parent.height
+                    smooth: false // pixel art
+                    interpolate: true
+                    running: visible
+
+                    property int frameDuration: 400
+                    Sprite{
+                        name: "1"
+                        source: "qrc:/resources/blast%1.png".arg(name)
+                        frameDuration: blastSeq.frameDuration
+                        to: {"2":1}
+                    }
+                    Sprite{
+                        name: "2"
+                        source: "qrc:/resources/blast%1.png".arg(name)
+                        frameDuration: blastSeq.frameDuration
+                        to: {"1":1}
+                    }
+                }
+            }
+        }
+    }
+
     property var enemyList: [
         "qrc:/resources/bat.png",
         "qrc:/resources/slime.png",
@@ -72,12 +150,13 @@ Item {
         id: enemies
         width: parent.width
         height: parent.height
+        property int enemiesCount: 0
 
+        // Add enemies over time, faster as level goes up
         Timer {
             id: enemiesTimer
-            interval: Math.floor(Math.random() * (10 - game.level) + 10) * 1000; running: visible; repeat: true
+            interval: Math.floor(Math.random() * Math.max((10 - game.level), 0) + 10) * 1000; running: visible; repeat: true
             onTriggered: {
-                console.log("Another enemy");
                 for (var i = 0; i < repeater.count; i++) {
                     if (!repeater.itemAt(i).visible) {
                         repeater.itemAt(i).visible = true;
@@ -101,9 +180,10 @@ Item {
                 property real percent: 0
                 property int enemyidx: Math.floor(Math.random() * enemyList.length)
                 visible: false // disable at creation
+                onVisibleChanged: { if (visible) { enemies.enemiesCount++; } else { enemies.enemiesCount--; } }
 
                 Timer {
-                    interval: (Math.floor(Math.random() * (10 - game.level)) + 3) * 1000; running: visible; repeat: true
+                    interval: (Math.floor(Math.random() * Math.max((10 - game.level), 0)) + 3) * 1000; running: visible; repeat: true
                     onTriggered: {
                         enemy.percent = Math.min(enemy.percent + 0.05, 1.0)
                         if (enemy.percent >= 1.0) game.gameOver = true;
@@ -147,20 +227,23 @@ Item {
         }
     }
 
+    Text {
+        anchors.centerIn: caveView
+        text: "GAME OVER"
+        horizontalAlignment: Text.horizontalAlignment
+        font.pixelSize: parent.width * 0.10
+        font.bold: true
+        color: "red"
+        style: Text.Outline
+        styleColor: "black"
+        visible: game.gameOver
+    }
+
     Connections {
         target: game
         onScoreChanged: {
-            var percent = -1;
-            var index = -1
-            for (var i = 0; i < repeater.count; i++) {
-                if (repeater.itemAt(i).visible && repeater.itemAt(i).percent > percent) {
-                    percent = repeater.itemAt(i).percent
-                    index = i;
-                }
-            }
-            if (index >= 0) {
-                repeater.itemAt(index).visible = false
-            }
+            // Only do blaster if there are enemies
+            if (enemies.enemiesCount > blastItem.blastCount) blastItem.addBlast()
         }
     }
 
@@ -170,6 +253,5 @@ Item {
         repeater.itemAt(0).visible = true;
         repeater.itemAt(0).enemyidx = Math.floor(Math.random() * enemyList.length)
         repeater.itemAt(0).percent = 0;
-
     }
 }
